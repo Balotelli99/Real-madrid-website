@@ -1,4 +1,64 @@
-<?php $players = require __DIR__ . '/players.php'; ?>
+<?php
+require __DIR__ . '/db.php';
+
+$players = [];
+
+$normalizePlayers = static function (array $rows): array {
+  $map = [
+    'Aanvaller' => 'FWD',
+    'Middenvelder' => 'MID',
+    'Verdediger' => 'DEF',
+    'Keeper' => 'GK'
+  ];
+
+  return array_map(static function (array $player) use ($map): array {
+    $name = trim((string) ($player['name'] ?? ''));
+    $parts = preg_split('/\s+/', $name, 2);
+    $firstName = $player['firstName'] ?? ($parts[0] ?? '');
+    $lastName = $player['lastName'] ?? ($parts[1] ?? '');
+
+    return [
+      'name' => $name,
+      'firstName' => $firstName,
+      'lastName' => $lastName,
+      'position' => $map[$player['position'] ?? ''] ?? ($player['position'] ?? 'FWD'),
+      'country' => $player['country'] ?? 'NEDERLAND',
+      'matches' => (int) ($player['matches'] ?? 0),
+      'goals' => (int) ($player['goals'] ?? 0),
+      'assists' => (int) ($player['assists'] ?? 0),
+      'km' => (float) ($player['kilometers'] ?? $player['km'] ?? 0),
+      'shirt' => (int) ($player['shirt'] ?? 0),
+      'image' => $player['image'] ?? 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=600&h=800&fit=crop&auto=format'
+    ];
+  }, $rows);
+};
+
+try {
+  $stmt = $pdo->query('SELECT * FROM players ORDER BY name ASC');
+  $players = $normalizePlayers($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+  if (empty($players)) {
+    $players = $normalizePlayers(require __DIR__ . '/players.php');
+  }
+} catch (Throwable $e) {
+  $players = $normalizePlayers(require __DIR__ . '/players.php');
+}
+
+$topScorer = $players[0] ?? ['name' => 'Geen speler', 'goals' => 0];
+$topAssister = $players[0] ?? ['name' => 'Geen speler', 'assists' => 0];
+$topDistance = $players[0] ?? ['name' => 'Geen speler', 'km' => 0];
+
+if (!empty($players)) {
+  usort($players, static fn(array $a, array $b) => $b['goals'] <=> $a['goals']);
+  $topScorer = $players[0];
+
+  usort($players, static fn(array $a, array $b) => $b['assists'] <=> $a['assists']);
+  $topAssister = $players[0];
+
+  usort($players, static fn(array $a, array $b) => $b['km'] <=> $a['km']);
+  $topDistance = $players[0];
+}
+?>
 <!DOCTYPE html>
 <html lang="nl">
   <head>
@@ -17,7 +77,7 @@
           <img class="club-mark" src="https://upload.wikimedia.org/wikipedia/en/5/5c/Real_Madrid_CF_logo.svg" alt="Real Madrid wapen" />
           <div>
             <div class="club-name">Real Madrid C.F.</div>
-            <div class="club-season">SEIZOEN 2024–25 · LA LIGA &amp; CHAMPIONS LEAGUE</div>
+            <div class="club-season">SEIZOEN 2026–27 · LA LIGA &amp; CHAMPIONS LEAGUE</div>
           </div>
         </div>
 
@@ -26,18 +86,18 @@
         <div class="top-stats">
           <div class="top-stat">
             <span class="top-label">TOPSCORER</span>
-            <strong class="top-name">Kylian Mbappé</strong>
-            <span class="top-value">31 goals</span>
+            <strong class="top-name"><?= htmlspecialchars($topScorer['name'] ?? 'Geen speler', ENT_QUOTES, 'UTF-8') ?></strong>
+            <span class="top-value"><?= (int) ($topScorer['goals'] ?? 0) ?> goals</span>
           </div>
           <div class="top-stat">
             <span class="top-label">MEESTE ASSISTS</span>
-            <strong class="top-name">Vinícius Jr.</strong>
-            <span class="top-value">12 assists</span>
+            <strong class="top-name"><?= htmlspecialchars($topAssister['name'] ?? 'Geen speler', ENT_QUOTES, 'UTF-8') ?></strong>
+            <span class="top-value"><?= (int) ($topAssister['assists'] ?? 0) ?> assists</span>
           </div>
           <div class="top-stat">
             <span class="top-label">MEESTE KM</span>
-            <strong class="top-name">Federico Valverde</strong>
-            <span class="top-value">402 km</span>
+            <strong class="top-name"><?= htmlspecialchars($topDistance['name'] ?? 'Geen speler', ENT_QUOTES, 'UTF-8') ?></strong>
+            <span class="top-value"><?= number_format((float) ($topDistance['km'] ?? 0), 1, ',', '.') ?> km</span>
           </div>
         </div>
       </div>

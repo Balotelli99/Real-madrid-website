@@ -1,10 +1,54 @@
 <?php
-$players = require __DIR__ . '/players.php';
+require __DIR__ . '/db.php';
+
+$players = [];
+
+$normalizePlayers = static function (array $rows): array {
+  $map = [
+    'Aanvaller' => 'FWD',
+    'Middenvelder' => 'MID',
+    'Verdediger' => 'DEF',
+    'Keeper' => 'GK'
+  ];
+
+  return array_map(static function (array $player) use ($map): array {
+    $name = trim((string) ($player['name'] ?? ''));
+    $parts = preg_split('/\s+/', $name, 2);
+    $firstName = $player['firstName'] ?? ($parts[0] ?? '');
+    $lastName = $player['lastName'] ?? ($parts[1] ?? '');
+
+    return [
+      'name' => $name,
+      'firstName' => $firstName,
+      'lastName' => $lastName,
+      'position' => $map[$player['position'] ?? ''] ?? ($player['position'] ?? 'FWD'),
+      'country' => $player['country'] ?? 'NEDERLAND',
+      'matches' => (int) ($player['matches'] ?? 0),
+      'goals' => (int) ($player['goals'] ?? 0),
+      'assists' => (int) ($player['assists'] ?? 0),
+      'km' => (float) ($player['kilometers'] ?? $player['km'] ?? 0),
+      'shirt' => (int) ($player['shirt'] ?? 0),
+      'image' => $player['image'] ?? 'https://images.unsplash.com/photo-1517466787929-bc90951d0974?w=600&h=800&fit=crop&auto=format'
+    ];
+  }, $rows);
+};
+
+try {
+  $stmt = $pdo->query('SELECT * FROM players ORDER BY name ASC');
+  $players = $normalizePlayers($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+  if (empty($players)) {
+    $players = $normalizePlayers(require __DIR__ . '/players.php');
+  }
+} catch (Throwable $e) {
+  $players = $normalizePlayers(require __DIR__ . '/players.php');
+}
+
 $selectedPlayerName = $_GET['speler'] ?? '';
 $selectedPlayer = null;
 
 foreach ($players as $player) {
-  if ($player['name'] === $selectedPlayerName) {
+  if (($player['name'] ?? '') === $selectedPlayerName) {
     $selectedPlayer = $player;
     break;
   }
