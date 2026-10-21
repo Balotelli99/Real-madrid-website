@@ -193,6 +193,13 @@ button { font: inherit; }
   padding: 24px 0 48px;
 }
 
+.error-message {
+  padding: 16px 20px;
+  border: 1px solid #f5c451;
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
 .player-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));

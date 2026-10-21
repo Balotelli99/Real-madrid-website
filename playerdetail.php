@@ -1,13 +1,21 @@
 <?php
-require __DIR__ . '/db.php';
-require __DIR__ . '/players.php';
+$errorMessage = '';
+$selectedPlayer = null;
 
-$players = loadPlayers($pdo ?? null);
-$selectedPlayerName = trim((string) ($_GET['speler'] ?? ''));
-$selectedPlayer = findPlayerByName($players, $selectedPlayerName);
+try {
+  require __DIR__ . '/db.php';
+  require __DIR__ . '/players.php';
+  $players = loadPlayers($mysqli);
+  $selectedPlayerName = trim((string) ($_GET['speler'] ?? ''));
+  $selectedPlayer = findPlayerByName($players, $selectedPlayerName);
+} catch (Throwable $error) {
+  error_log($error->getMessage());
+  http_response_code(500);
+  $errorMessage = 'Er ging iets mis. Controleer de database en probeer opnieuw.';
+}
 
-if (!$selectedPlayer) {
-    http_response_code(404);
+if ($errorMessage === '' && $selectedPlayer === null) {
+  http_response_code(404);
 }
 
 $escape = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
@@ -17,7 +25,7 @@ $escape = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'U
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><?= $selectedPlayer ? $escape($selectedPlayer['name']) . ' | Real Madrid' : 'Speler niet gevonden | Real Madrid' ?></title>
+    <title><?= $selectedPlayer ? $escape($selectedPlayer['name']) . ' | Real Madrid' : 'Spelerdetails | Real Madrid' ?></title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body class="detail-page">
@@ -34,7 +42,9 @@ $escape = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'U
     </header>
 
     <main class="container main-content">
-      <?php if ($selectedPlayer): ?>
+      <?php if ($errorMessage !== ''): ?>
+        <p class="error-message" role="alert"><?= $escape($errorMessage) ?></p>
+      <?php elseif ($selectedPlayer): ?>
         <section class="player-detail">
           <a class="detail-back" href="index.php">&larr; Terug naar selectie</a>
 
