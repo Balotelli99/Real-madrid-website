@@ -38,6 +38,7 @@ function normalizePlayers(array $rows): array
         $position = $player['position'] ?? 'FWD';
 
         return [
+            'id' => (int) ($player['id'] ?? 0),
             'name' => $name,
             'firstName' => $player['firstName'] ?? ($nameParts[0] ?? ''),
             'lastName' => $player['lastName'] ?? ($nameParts[1] ?? ''),

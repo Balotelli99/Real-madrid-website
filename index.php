@@ -8,17 +8,12 @@ try {
   require __DIR__ . '/players.php';
   $players = loadPlayers($mysqli);
 
-  foreach ($players as $player) {
-    if ($leaders['goals'] === null || $player['goals'] > $leaders['goals']['goals']) {
-      $leaders['goals'] = $player;
-    }
-
-    if ($leaders['assists'] === null || $player['assists'] > $leaders['assists']['assists']) {
-      $leaders['assists'] = $player;
-    }
-
-    if ($leaders['km'] === null || $player['km'] > $leaders['km']['km']) {
-      $leaders['km'] = $player;
+  $stats = ['goals', 'assists', 'km'];
+  foreach ($stats as $stat) {
+    foreach ($players as $speler) {
+      if ($leaders[$stat] === null || $speler[$stat] > $leaders[$stat][$stat]) {
+        $leaders[$stat] = $speler;
+      }
     }
   }
 } catch (mysqli_sql_exception $error) {
@@ -31,9 +26,10 @@ try {
   $errorMessage = 'Er ging iets mis bij het laden van de spelers.';
 }
 
-$topScorer = $leaders['goals'] ?? ['name' => 'Geen speler', 'goals' => 0];
-$topAssister = $leaders['assists'] ?? ['name' => 'Geen speler', 'assists' => 0];
-$topDistance = $leaders['km'] ?? ['name' => 'Geen speler', 'km' => 0];
+$none = ['name' => 'Geen speler'];
+$topscorer   = $leaders['goals']   ?? $none + ['goals' => 0];
+$topAssister = $leaders['assists'] ?? $none + ['assists' => 0];
+$topDistance = $leaders['km']      ?? $none + ['km' => 0];
 $playersJson = json_encode($players, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
 ?>
 <!DOCTYPE html>
@@ -61,8 +57,8 @@ $playersJson = json_encode($players, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS
         <div class="summary-row">
           <div class="summary-card">
             <span>Topscorer</span>
-            <strong><?= htmlspecialchars($topScorer['name'] ?? 'Geen speler', ENT_QUOTES, 'UTF-8') ?></strong>
-            <small><?= (int) ($topScorer['goals'] ?? 0) ?> goals</small>
+            <strong><?= htmlspecialchars($topscorer['name'] ?? 'Geen speler', ENT_QUOTES, 'UTF-8') ?></strong>
+            <small><?= (int) ($topscorer['goals'] ?? 0) ?> goals</small>
           </div>
           <div class="summary-card">
             <span>Meeste assists</span>
@@ -87,6 +83,7 @@ $playersJson = json_encode($players, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS
     <div class="toolbar">
       <div class="container toolbar-inner">
         <div class="filter-group" id="filterGroup"></div>
+        <a class="manage-link" href="beheer.php">Spelers beheren</a>
         <div class="sort-group">
           <span class="sort-label">Sorteer</span>
           <button class="sort-button active" type="button" data-sort="goals">Goals</button>
