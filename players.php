@@ -1,67 +1,44 @@
 <?php
 
-function normalizePlayerName(string $name): string
+// Haalt alle spelers uit de database
+function loadPlayers($database)
 {
-    $name = html_entity_decode($name, ENT_QUOTES, 'UTF-8');
-    $name = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $name);
+    $result = $database->query('SELECT * FROM players ORDER BY name ASC');
+    $players = [];
 
-    return strtolower(preg_replace('/[^a-z0-9]/i', '', $name ?: ''));
+    while ($row = $result->fetch_assoc()) {
+        $name = trim($row['name']);
+
+        // Naam in twee stukken: "Kylian Mbappe" wordt "Kylian" en "Mbappe"
+        $nameParts = explode(' ', $name, 2);
+
+        $players[] = [
+            'id' => (int) $row['id'],
+            'name' => $name,
+            'firstName' => $row['firstName'] ?? $nameParts[0],
+            'lastName' => $row['lastName'] ?? ($nameParts[1] ?? ''),
+            'position' => $row['position'],
+            'country' => $row['country'] ?? 'NEDERLAND',
+            'matches' => (int) $row['matches'],
+            'goals' => (int) $row['goals'],
+            'assists' => (int) $row['assists'],
+            'km' => (int) $row['km'],
+            'shirt' => (int) $row['shirt'],
+            'image' => $row['image'] ?? '',
+        ];
+    }
+
+    return $players;
 }
 
-function findPlayerByName(array $players, string $selectedName): ?array
+// Zoekt een speler op naam, bijvoorbeeld voor de detailpagina
+function findPlayerByName($players, $name)
 {
-    $needle = normalizePlayerName($selectedName);
-
     foreach ($players as $player) {
-        $candidate = normalizePlayerName((string) ($player['name'] ?? ''));
-
-        if ($candidate === $needle) {
+        if (strtolower($player['name']) === strtolower(trim($name))) {
             return $player;
         }
     }
 
     return null;
-}
-
-function normalizePlayers(array $rows): array
-{
-    $positions = [
-        'Aanvaller' => 'FWD',
-        'Middenvelder' => 'MID',
-        'Verdediger' => 'DEF',
-        'Keeper' => 'GK',
-    ];
-
-    return array_map(static function (array $player) use ($positions): array {
-        $name = trim((string) ($player['name'] ?? ''));
-        $nameParts = preg_split('/\s+/', $name, 2);
-        $position = $player['position'] ?? 'FWD';
-
-        return [
-            'id' => (int) ($player['id'] ?? 0),
-            'name' => $name,
-            'firstName' => $player['firstName'] ?? ($nameParts[0] ?? ''),
-            'lastName' => $player['lastName'] ?? ($nameParts[1] ?? ''),
-            'position' => $positions[$position] ?? $position,
-            'country' => $player['country'] ?? 'NEDERLAND',
-            'matches' => (int) ($player['matches'] ?? 0),
-            'goals' => (int) ($player['goals'] ?? 0),
-            'assists' => (int) ($player['assists'] ?? 0),
-            'km' => (float) ($player['kilometers'] ?? $player['km'] ?? 0),
-            'shirt' => (int) ($player['shirt'] ?? 0),
-            'image' => $player['image'] ?? '',
-        ];
-    }, $rows);
-}
-
-function loadPlayers(mysqli $database): array
-{
-    $result = $database->query('SELECT * FROM players ORDER BY name ASC');
-    $rows = [];
-
-    while ($player = $result->fetch_assoc()) {
-        $rows[] = $player;
-    }
-
-    return normalizePlayers($rows);
 }

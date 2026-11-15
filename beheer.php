@@ -66,7 +66,7 @@ $playersJson = json_encode($players, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS
             <label>Goals<input name="goals" type="number" min="0" step="1" value="0" required /></label>
             <label>Assists<input name="assists" type="number" min="0" step="1" value="0" required /></label>
             <label>Kilometers<input name="km" type="number" min="0" step="1" value="0" required /></label>
-            <label class="form-wide">Afbeeldings-URL<input name="image" type="url" maxlength="255" /></label>
+            <label class="form-wide">Afbeelding (bijv. images/mbappe.png of een link)<input name="image" type="text" maxlength="255" /></label>
             <button class="management-submit" id="submitPlayer" type="submit">Speler toevoegen</button>
           </form>
 

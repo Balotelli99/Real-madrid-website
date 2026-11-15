@@ -1,19 +1,30 @@
 <?php
 $errorMessage = '';
 $players = [];
-$leaders = ['goals' => null, 'assists' => null, 'km' => null];
+
+// Hier komen de beste spelers in. In het begin weten we nog niemand.
+$topscorer = null;
+$topAssister = null;
+$topDistance = null;
 
 try {
   require __DIR__ . '/db.php';
   require __DIR__ . '/players.php';
   $players = loadPlayers($mysqli);
 
-  $stats = ['goals', 'assists', 'km'];
-  foreach ($stats as $stat) {
-    foreach ($players as $speler) {
-      if ($leaders[$stat] === null || $speler[$stat] > $leaders[$stat][$stat]) {
-        $leaders[$stat] = $speler;
-      }
+  // Alle spelers langsgaan en steeds de beste onthouden
+  foreach ($players as $speler) {
+    // Nog geen topscorer, of heeft deze speler meer goals? Dan is hij de nieuwe topscorer.
+    if ($topscorer === null || $speler['goals'] > $topscorer['goals']) {
+      $topscorer = $speler;
+    }
+
+    if ($topAssister === null || $speler['assists'] > $topAssister['assists']) {
+      $topAssister = $speler;
+    }
+
+    if ($topDistance === null || $speler['km'] > $topDistance['km']) {
+      $topDistance = $speler;
     }
   }
 } catch (mysqli_sql_exception $error) {
@@ -26,10 +37,6 @@ try {
   $errorMessage = 'Er ging iets mis bij het laden van de spelers.';
 }
 
-$none = ['name' => 'Geen speler'];
-$topscorer   = $leaders['goals']   ?? $none + ['goals' => 0];
-$topAssister = $leaders['assists'] ?? $none + ['assists' => 0];
-$topDistance = $leaders['km']      ?? $none + ['km' => 0];
 $playersJson = json_encode($players, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_INVALID_UTF8_SUBSTITUTE);
 ?>
 <!DOCTYPE html>
