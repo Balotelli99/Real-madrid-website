@@ -31,11 +31,11 @@ function loadPlayers($database)
     return $players;
 }
 
-// Zoekt een speler op naam, bijvoorbeeld voor de detailpagina
+// Zoekt een speler op naam voor de detailpagina
 function findPlayerByName($players, $name)
 {
     foreach ($players as $player) {
-        if (strtolower($player['name']) === strtolower(trim($name))) {
+        if ($player['name'] === $name) {
             return $player;
         }
     }
